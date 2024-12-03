@@ -537,7 +537,10 @@ def main():
         "Minnesota": (44.9740, 93.2277),
         "Nebraska": (40.8202, 96.7005),
         "Washington": (47.6567, 122.3066),
+<<<<<<< HEAD
         "Utah": (40.7649, 111.8421)
+=======
+>>>>>>> origin/main
     }
     
     weather.fetch_weather_for_games(home_location, away_locations)
