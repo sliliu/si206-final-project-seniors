@@ -169,17 +169,13 @@ class CollegeFootballData:
             self.get_michigan_team_results(year)
             sleep(1)
 
-import requests
-import sqlite3
-from datetime import datetime
-
 class Weather:
     def __init__(self, db_path="football_stats.db"):
         """Initialize the Weather class with a database path."""
         self.db_path = db_path
-        self.create_table()
+        self.create_weather_table()
 
-    def create_table(self):
+    def create_weather_table(self):
         """Create the WeatherData table in the database if it doesn't exist."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -195,7 +191,8 @@ class Weather:
                 rain_sum REAL,
                 snowfall_sum REAL,
                 max_wind_speed REAL,
-                max_wind_gust REAL
+                max_wind_gust REAL,
+                UNIQUE(date, location) -- Prevent duplicate entries
             )
         """)
         conn.commit()
@@ -225,7 +222,6 @@ class Weather:
 
         # Make the API request
         response = requests.get(url, params=params)
-        
         if response.status_code == 200:
             data = response.json()
             self.store_weather_data(latitude, longitude, data)
@@ -258,11 +254,9 @@ class Weather:
         max_wind_speed = daily_data.get("wind_speed_10m_max", [])
         max_wind_gust = daily_data.get("wind_gusts_10m_max", [])
 
-        entries_to_store = min(len(dates), 25)  # Limit to 25 entries
-
-        for i in range(entries_to_store):
+        for i in range(len(dates)):
             cursor.execute("""
-                INSERT INTO WeatherData (
+                INSERT OR IGNORE INTO WeatherData (
                     date, location, max_temperature, min_temperature, mean_temperature,
                     precipitation_sum, rain_sum, snowfall_sum, max_wind_speed, max_wind_gust
                 )
@@ -274,70 +268,67 @@ class Weather:
 
         conn.commit()
         conn.close()
-        print(f"Successfully stored {entries_to_store} daily weather data entries!")
+        print(f"Successfully stored weather data for location {latitude},{longitude}!")
 
-    def retrieve_weather_data(self, latitude, longitude, start_date, end_date):
+    def weather_data_exists(self, date, latitude, longitude):
         """
-        Retrieve weather data from the SQLite database for a specific location and date range.
+        Check if weather data already exists for a specific date and location.
 
         Args:
+            date (str): Date in YYYY-MM-DD format.
             latitude (float): Latitude of the location.
             longitude (float): Longitude of the location.
-            start_date (str): Start date in YYYY-MM-DD format.
-            end_date (str): End date in YYYY-MM-DD format.
 
         Returns:
-            list: List of dictionaries containing weather data.
+            bool: True if weather data exists, False otherwise.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         location = f"{latitude},{longitude}"
-        cursor.execute("""
-            SELECT date, max_temperature, min_temperature, mean_temperature,
-                   precipitation_sum, rain_sum, snowfall_sum, max_wind_speed, max_wind_gust
-            FROM WeatherData
-            WHERE location = ? AND date BETWEEN ? AND ?
-        """, (location, start_date, end_date))
-        rows = cursor.fetchall()
+        cursor.execute("SELECT 1 FROM WeatherData WHERE date = ? AND location = ?", (date, location))
+        exists = cursor.fetchone() is not None
         conn.close()
 
-        return [
-            {
-                "date": row[0],
-                "max_temperature": row[1],
-                "min_temperature": row[2],
-                "mean_temperature": row[3],
-                "precipitation_sum": row[4],
-                "rain_sum": row[5],
-                "snowfall_sum": row[6],
-                "max_wind_speed": row[7],
-                "max_wind_gust": row[8]
-            }
-            for row in rows
-        ]
+        return exists
 
-    def print_weather_data(self, latitude, longitude, start_date, end_date):
+    def fetch_weather_for_games(self, home_location, away_locations):
         """
-        Print weather data for a specific location and date range.
+        Fetch weather data for all games in the GameResults table.
 
         Args:
-            latitude (float): Latitude of the location.
-            longitude (float): Longitude of the location.
-            start_date (str): Start date in YYYY-MM-DD format.
-            end_date (str): End date in YYYY-MM-DD format.
+            home_location (tuple): (latitude, longitude) for home games.
+            away_locations (dict): Mapping of opponents to their (latitude, longitude).
         """
-        weather_data = self.retrieve_weather_data(latitude, longitude, start_date, end_date)
-        if weather_data:
-            print(f"Weather data for {latitude},{longitude} from {start_date} to {end_date}:")
-            for entry in weather_data:
-                print(f"Date: {entry['date']}, Max Temp: {entry['max_temperature']}°C, "
-                      f"Min Temp: {entry['min_temperature']}°F, Mean Temp: {entry['mean_temperature']}°F, "
-                      f"Precipitation: {entry['precipitation_sum']}mm, Rain: {entry['rain_sum']}mm, "
-                      f"Snowfall: {entry['snowfall_sum']}mm, Max Wind Speed: {entry['max_wind_speed']}km/h, "
-                      f"Max Wind Gust: {entry['max_wind_gust']}km/h")
-        else:
-            print("No data found for the specified location and date range.")
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Query game data from GameResults
+        cursor.execute("SELECT date, home_away, opponent FROM GameResults")
+        games = cursor.fetchall()
+        conn.close()
+
+        for game in games:
+            game_date, home_away, opponent = game
+
+            # Determine latitude and longitude based on home/away
+            if home_away.lower() == "home":
+                latitude, longitude = home_location
+            else:
+                latitude, longitude = away_locations.get(opponent, (None, None))
+
+            if latitude is not None and longitude is not None:
+                # Check if weather data for this date and location already exists
+                if not self.weather_data_exists(game_date, latitude, longitude):
+                    self.fetch_and_store_weather_data(
+                        latitude=latitude,
+                        longitude=longitude,
+                        start_date=game_date,
+                        end_date=game_date
+                    )
+                else:
+                    print(f"Weather data for {game_date} at {latitude},{longitude} already exists.")
+
 
 
 def main():
@@ -346,19 +337,30 @@ def main():
     football_data.fetch_and_store_michigan_data(2024, 2015)
     
     weather = Weather()
-    weather.fetch_and_store_weather_data(
-        latitude=42.2808,
-        longitude=83.7430,
-        start_date="2024-11-17",
-        end_date="2024-11-17"
-    )
-    # Retrieve and print the stored data
-    weather.print_weather_data(
-        latitude=42.2808,
-        longitude=83.7430,
-        start_date="2024-11-17",
-        end_date="2024-11-17"
-    )
+    home_location = (42.2808, 83.7430)  # Ann Arbor
+
+    # dictionary of away locations (opponent -> (latitude, longitude))
+    away_locations = {
+        "Rutgers": (40.5018, 74.4479),
+        "Ohio State": (40.0061, 83.0283),
+        "Michigan State": (42.7251, 84.4791),
+        "Iowa": (42.7251, 84.4791),
+        "Michigan State": (42.7251, 84.4791),
+        "Florida": (29.6465, 82.3533),
+        "Purdue": (40.4237, 86.9212),
+        "Indiana": (39.1682, 86.5230),
+        "Penn State": (40.7982, 77.8599),
+        "Maryland": (38.9869, 76.9426),
+        "Wisconsin": (43.0753, 89.4081),
+        "Notre Dame": (41.7052, 86.2352),
+        "Northwestern": (42.0565, 87.6753),
+        "Illinois": (40.1020, 88.2272),
+        "Minnesota": (44.9740, 93.2277),
+        "Nebraska": (40.8202, 96.7005),
+        "Washington": (47.6567, 122.3066),
+    }
+    
+    weather.fetch_weather_for_games(home_location, away_locations)
 
 if __name__ == "__main__":
     main()
