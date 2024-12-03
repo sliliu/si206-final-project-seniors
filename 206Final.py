@@ -353,9 +353,10 @@ def main():
         get_michigan_team_results(year)
         sleep(1)
 
-    
     get_percentage_for_wind_speed()
     get_total_points_for_tempurature()
     get_completion_for_wind_chill()
+    
+    
 if __name__ == "__main__":
     main()

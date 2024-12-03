@@ -168,6 +168,185 @@ class CollegeFootballData:
             self.get_michigan_game_results(year)
             self.get_michigan_team_results(year)
             sleep(1)
+    
+    def get_percentage_for_wind_speed():
+        """
+        Retrieve and calculate the percentage of rushing attempts relative to completion attempts
+        for each game, along with game details.
+        """
+        conn = sqlite3.connect('football_stats.db')
+        cursor = conn.cursor()
+        
+        # SQL query to join GameResults and GameStats and retrieve required columns
+        query = '''
+        SELECT 
+            gr.gameID, 
+            gr.date, 
+            gr.home_away, 
+            gr.opponent, 
+            gs.rushingAttempts, 
+            gs.completionAttempts
+        FROM 
+            GameResults AS gr
+        JOIN 
+            GameStats AS gs 
+        ON 
+            gr.gameID = gs.gameID
+        '''
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Process and calculate percentage
+        results = {}
+
+        for row in rows:
+            gameID, date, home_away, opponent, rushingAttempts, completionAttempts = row
+
+            if rushingAttempts is not None and completionAttempts not in (None, 0):
+                total_attempts = rushingAttempts + completionAttempts
+                passPercentage = (completionAttempts / total_attempts) * 100
+                rushPercentage = (rushingAttempts / total_attempts) * 100
+            else:
+                passPercentage = 0 
+                rushPercentage = 0
+
+            results[date] = [passPercentage, rushPercentage, home_away, opponent, gameID]
+        
+        #Write results to a file
+        with open('rushing_percentage.txt', 'w') as file:
+            file.write("-------------Rushing and passing percentage based on wind speed-------------")
+            file.write('\n')
+            file.write("Date\tGame ID\tHome/Away\tOpponent\tPass Percentage\tRush Percentage\n")
+            
+            # Iterate through the dictionary
+            for date, values in results.items():
+                passPercentage, rushPercentage, home_away, opponent, gameID = values
+                # Write each entry in the desired format
+                file.write(f"{date}\t{gameID}\t{home_away}\t{opponent}\t"
+                        f"{passPercentage:.2f}%\t{rushPercentage:.2f}%\n")
+        
+        conn.close()
+    
+    def get_total_points_for_tempurature():
+        """
+        Retrieve and calculate total points for each game based on temperature,
+        along with game details, and write the results to a file.
+        """
+        conn = sqlite3.connect('football_stats.db')
+        cursor = conn.cursor()
+
+        # SQL query to fetch required data from the GameResults table
+        query = '''
+        SELECT 
+            date, 
+            gameID, 
+            home_away, 
+            opponent, 
+            total_points
+        FROM 
+            GameResults
+        '''
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Process the data and store it in a dictionary
+        results = {}
+
+        for row in rows:
+            date, gameID, home_away, opponent, total_points = row
+            results[date] = {
+                "Game ID": gameID,
+                "Home/Away": home_away,
+                "Opponent": opponent,
+                "Total Points": total_points
+            }
+        
+        # Write results to a file
+        with open('total_points_temperature.txt', 'w') as file:
+            file.write("-------------Total Points Based on Temperature-------------\n")
+            file.write("Date\tGame ID\tHome/Away\tOpponent\tTotal Points\n")
+            
+            # Iterate through the dictionary
+            for date, values in results.items():
+                gameID = values["Game ID"]
+                home_away = values["Home/Away"]
+                opponent = values["Opponent"]
+                total_points = values["Total Points"]
+                
+                # Write each entry in the desired format
+                file.write(f"{date}\t{gameID}\t{home_away}\t{opponent}\t{total_points}\n")
+        
+        conn.close()
+    
+    def get_completion_for_wind_chill():
+        """
+        Retrieve and calculate the completion percentage for each game based on C_ATT,
+        along with game details, and write the results to a file.
+        """
+        conn = sqlite3.connect('football_stats.db')
+        cursor = conn.cursor()
+
+        # SQL query to fetch required data from the GameStats table
+        query = '''
+        SELECT 
+            gr.date, 
+            gs.C_ATT, 
+            gr.home_away, 
+            gr.opponent
+        FROM 
+            GameStats AS gs
+        JOIN 
+            GameResults AS gr
+        ON 
+            gs.gameID = gr.gameID
+        '''
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        # Process the data and store it in a dictionary
+        results = {}
+
+        for row in rows:
+            date, c_att, home_away, opponent = row
+
+            if c_att is not None:
+                # Split the C_ATT field by '-' and calculate the completion percentage
+                try:
+                    completed, attempted = map(int, c_att.split('-'))
+                    if attempted != 0:
+                        completion_percentage = (completed / attempted) * 100
+                    else:
+                        completion_percentage = 0
+                except ValueError:
+                    completion_percentage = 0
+            else:
+                completion_percentage = 0
+
+            # Store the results in the dictionary
+            results[date] = {
+                "Home/Away": home_away,
+                "Opponent": opponent,
+                "Completion Percentage": completion_percentage
+            }
+
+        # Write results to a file
+        with open('completion_percentage_wind_chill.txt', 'w') as file:
+            file.write("-------------Completion Percentage Based on Wind Speed-------------\n")
+            file.write("Date\tHome/Away\tOpponent\tCompletion Percentage\n")
+
+            # Iterate through the dictionary
+            for date, values in results.items():
+                home_away = values["Home/Away"]
+                opponent = values["Opponent"]
+                completion_percentage = values["Completion Percentage"]
+
+                # Write each entry in the desired format
+                file.write(f"{date}\t{home_away}\t{opponent}\t{completion_percentage:.2f}%\n")
+
+        conn.close()
 
 class Weather:
     def __init__(self, db_path="football_stats.db"):
@@ -358,7 +537,7 @@ def main():
         "Minnesota": (44.9740, 93.2277),
         "Nebraska": (40.8202, 96.7005),
         "Washington": (47.6567, 122.3066),
-        "Utah": (40.7649, 111.8421),
+        "Utah": (40.7649, 111.8421)
     }
     
     weather.fetch_weather_for_games(home_location, away_locations)
