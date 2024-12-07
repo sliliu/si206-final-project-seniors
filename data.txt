@@ -142,8 +142,8 @@ Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2023-10-14	Home	Indiana	86.36%	9.5 mph
 2022-11-12	Home	Nebraska	50.00%	9.4 mph
 2022-09-17	Home	UConn	80.77%	7.5 mph
-2022-11-05	Away	Rutgers	48.15%	3.4 mph
 2022-10-15	Home	Penn State	70.83%	7.4 mph
+2022-11-05	Away	Rutgers	48.15%	3.4 mph
 2022-12-04	Home	Purdue	64.71%	5.0 mph
 2021-09-04	Home	Western Michigan	76.47%	8.0 mph
 2021-11-13	Away	Penn State	65.52%	7.3 mph
@@ -155,8 +155,8 @@ Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2020-11-22	Away	Rutgers	66.67%	5.2 mph
 2019-10-05	Home	Iowa	53.85%	9.7 mph
 2019-10-26	Home	Notre Dame	57.14%	6.9 mph
-2019-10-12	Away	Illinois	50.00%	9.4 mph
 2019-10-19	Away	Penn State	58.54%	6.9 mph
+2019-10-12	Away	Illinois	50.00%	9.4 mph
 2019-08-31	Home	Middle Tennessee	57.58%	9.1 mph
 2019-11-30	Home	Ohio State	41.86%	5.6 mph
 2018-09-15	Home	SMU	77.78%	9.4 mph
@@ -165,43 +165,43 @@ Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2018-11-03	Home	Penn State	64.71%	8.4 mph
 2018-11-10	Away	Rutgers	66.67%	5.6 mph
 2018-11-17	Home	Indiana	57.14%	9.4 mph
-2018-09-22	Home	Nebraska	58.06%	9.5 mph
 2018-11-24	Away	Ohio State	60.53%	9.8 mph
+2018-09-22	Home	Nebraska	58.06%	9.5 mph
 2017-10-21	Away	Penn State	57.14%	9.5 mph
 2017-10-28	Home	Rutgers	65.00%	6.1 mph
+2017-09-02	Away	Florida	46.15%	6.8 mph
 2017-11-25	Home	Ohio State	53.12%	4.8 mph
 2017-09-16	Home	Air Force	60.87%	9.1 mph
-2017-09-02	Away	Florida	46.15%	6.8 mph
 2016-09-17	Home	Colorado	53.33%	7.2 mph
 2016-10-29	Away	Michigan State	64.00%	8.4 mph
 2016-11-19	Home	Indiana	43.75%	8.7 mph
 2016-09-10	Home	UCF	65.85%	9.0 mph
 2016-10-08	Away	Rutgers	50.00%	9.5 mph
-2016-11-13	Away	Iowa	42.31%	8.4 mph
 2016-09-03	Home	Hawai'i	85.00%	8.2 mph
+2016-11-13	Away	Iowa	42.31%	8.4 mph
 2016-11-26	Away	Ohio State	63.89%	9.1 mph
 2015-10-17	Home	Michigan State	60.00%	7.6 mph
 2015-10-31	Away	Minnesota	59.26%	9.8 mph
-2015-10-10	Home	Northwestern	73.91%	8.6 mph
 2015-11-07	Home	Rutgers	69.23%	7.2 mph
+2015-10-10	Home	Northwestern	73.91%	8.6 mph
 2015-11-28	Home	Ohio State	53.19%	7.6 mph
 
 --- Moderate Wind ---
 Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2024-10-19	Away	Illinois	62.50%	17.2 mph
 2024-09-14	Home	Arkansas State	72.22%	10.6 mph
-2024-09-21	Home	USC	58.33%	13.0 mph
 2024-10-05	Away	Washington	52.00%	16.9 mph
+2024-11-02	Home	Oregon	52.00%	13.0 mph
+2024-09-21	Home	USC	58.33%	13.0 mph
 2024-08-31	Home	Fresno State	59.26%	10.3 mph
 2024-11-23	Home	Northwestern	74.29%	12.2 mph
-2024-11-02	Home	Oregon	52.00%	13.0 mph
 2024-11-30	Away	Ohio State	56.25%	12.2 mph
-2023-11-11	Away	Penn State	87.50%	11.5 mph
-2023-09-02	Home	East Carolina	83.87%	15.6 mph
 2023-10-21	Away	Michigan State	80.00%	11.2 mph
+2023-09-02	Home	East Carolina	83.87%	15.6 mph
+2023-11-11	Away	Penn State	87.50%	11.5 mph
 2023-09-09	Home	UNLV	82.14%	12.2 mph
-2023-11-04	Home	Purdue	64.86%	10.5 mph
 2023-09-16	Home	Bowling Green	61.54%	10.0 mph
+2023-11-04	Home	Purdue	64.86%	10.5 mph
 2023-10-07	Away	Minnesota	69.57%	12.2 mph
 2022-09-03	Home	Colorado State	64.29%	11.5 mph
 2022-09-24	Home	Maryland	69.23%	11.6 mph
@@ -214,17 +214,17 @@ Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2021-11-20	Away	Maryland	72.50%	17.8 mph
 2021-09-18	Home	Northern Illinois	70.59%	10.6 mph
 2021-10-09	Away	Nebraska	56.41%	19.1 mph
-2021-09-25	Home	Rutgers	56.25%	16.9 mph
 2021-10-23	Home	Northwestern	71.88%	11.6 mph
 2021-09-12	Home	Washington	46.67%	11.1 mph
 2021-11-27	Home	Ohio State	70.00%	19.1 mph
+2021-09-25	Home	Rutgers	56.25%	16.9 mph
 2020-10-24	Away	Minnesota	60.00%	15.3 mph
 2020-11-07	Away	Indiana	52.94%	10.5 mph
 2020-11-28	Home	Penn State	46.43%	14.9 mph
 2019-11-16	Home	Michigan State	72.73%	18.2 mph
 2019-11-02	Away	Maryland	55.17%	10.8 mph
-2019-09-07	Home	Army	64.52%	10.5 mph
 2019-09-28	Home	Rutgers	74.07%	12.4 mph
+2019-09-07	Home	Army	64.52%	10.5 mph
 2019-09-21	Away	Wisconsin	40.48%	16.1 mph
 2018-09-29	Away	Northwestern	62.50%	17.0 mph
 2018-09-08	Home	Western Michigan	72.22%	11.7 mph
@@ -233,12 +233,12 @@ Date	Home/Away	Opponent	Completion Percentage	Max Wind Speed
 2017-11-11	Away	Maryland	50.00%	15.3 mph
 2017-11-18	Away	Wisconsin	42.31%	10.9 mph
 2017-10-14	Away	Indiana	50.00%	16.3 mph
-2017-09-09	Home	Cincinnati	58.62%	12.7 mph
 2017-09-23	Away	Purdue	67.74%	12.3 mph
 2017-10-07	Home	Michigan State	45.71%	15.5 mph
+2017-09-09	Home	Cincinnati	58.62%	12.7 mph
 2016-10-22	Home	Illinois	71.43%	10.7 mph
-2016-09-24	Home	Penn State	60.00%	10.8 mph
 2016-10-01	Home	Wisconsin	62.50%	12.1 mph
+2016-09-24	Home	Penn State	60.00%	10.8 mph
 2016-11-05	Home	Maryland	77.78%	16.0 mph
 2015-09-19	Home	UNLV	56.00%	14.8 mph
 2015-09-26	Home	BYU	56.00%	11.9 mph
