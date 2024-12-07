@@ -18,6 +18,8 @@ class CollegeFootballData:
             "Authorization": f"Bearer {self.api_key}"
         }
         self.database = 'football_stats.db'
+        self.games_list = []
+        self.teams_list = []
 
     def create_database(self):
         """
@@ -50,46 +52,78 @@ class CollegeFootballData:
         
         conn.commit()
         conn.close()
-
-    def insert_game_results(self, gameID, date, home_away, opponent, total_points):
-        """
-        Insert game results into the database, avoiding duplicates.
-        """
-        conn = sqlite3.connect(self.database)
-        cursor = conn.cursor()
-
-        cursor.execute('SELECT gameID FROM GameResults WHERE gameID = ?', (gameID,))
-        if cursor.fetchone():
-            conn.close()
-            return  # Avoid duplicates
         
-        cursor.execute('''
-        INSERT INTO GameResults (gameID, date, home_away, opponent, total_points)
-        VALUES (?, ?, ?, ?, ?)
-        ''', (gameID, date, home_away, opponent, total_points))
-        
-        conn.commit()
-        conn.close()
-
-    def insert_game_stats(self, gameID, rushingAttempts, completionAttempts, C_ATT, rushingYards, passingYards):
+    def insert_game_results(self, game_data):
         """
-        Insert game stats into the database, avoiding duplicates.
+        Insert up to 25 game results into the database, avoiding duplicates.
+        :param game_data: List of dictionaries containing game results
         """
         conn = sqlite3.connect(self.database)
         cursor = conn.cursor()
 
-        cursor.execute('SELECT gameID FROM GameStats WHERE gameID = ?', (gameID,))
-        if cursor.fetchone():
-            conn.close()
-            return  # Avoid duplicates
-        
-        cursor.execute('''
-        INSERT INTO GameStats (gameID, rushingAttempts, completionAttempts, C_ATT, rushingYards, passingYards)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ''', (gameID, rushingAttempts, completionAttempts, C_ATT, rushingYards, passingYards))
-        
-        conn.commit()
+        to_insert = []
+        for game in game_data:
+            if len(to_insert) >= 25:  # Limit to 25 records
+                break
+
+            game_id = game['gameID']
+            # Check if the record already exists
+            cursor.execute('SELECT gameID FROM GameResults WHERE gameID = ?', (game_id,))
+            if not cursor.fetchone():  # If not found, prepare for insertion
+                to_insert.append(game)
+
+        # Insert the batch of up to 25 records that are not duplicates
+        for game in to_insert:
+            cursor.execute('''
+            INSERT INTO GameResults (gameID, date, home_away, opponent, total_points)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (
+                game['gameID'], 
+                game['date'], 
+                game['home_away'], 
+                game['opponent'], 
+                game['total_points']
+            ))
+
+        conn.commit()  # Commit the batch to the database
         conn.close()
+        
+    def insert_game_stats(self, game_data):
+        """
+        Insert up to 25 game stats into the database, avoiding duplicates.
+        :param game_data: List of dictionaries containing game stats
+        """
+        conn = sqlite3.connect(self.database)
+        cursor = conn.cursor()
+
+        to_insert = []
+        for game in game_data:
+            if len(to_insert) >= 25:  # Limit to 25 records
+                break
+
+            game_id = game['gameID']
+            # Check if the record already exists
+            cursor.execute('SELECT gameID FROM GameStats WHERE gameID = ?', (game_id,))
+            if not cursor.fetchone():  # If not found, prepare for insertion
+                to_insert.append(game)
+
+        # Insert the batch of up to 25 records that are not duplicates
+        for game in to_insert:
+            cursor.execute('''
+            INSERT INTO GameStats (gameID, rushingAttempts, completionAttempts, C_ATT, rushingYards, passingYards)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                game['gameID'], 
+                game['rushingAttempts'], 
+                game['completionAttempts'], 
+                game['C_ATT'], 
+                game['rushingYards'], 
+                game['passingYards']
+            ))
+
+        conn.commit()  # Commit the batch to the database
+        conn.close()
+    
 
     def fetch_data(self, endpoint, params=None):
         """
@@ -124,7 +158,7 @@ class CollegeFootballData:
                 away_team = game.get('away_team')
                 home_points = game.get('home_points')
                 away_points = game.get('away_points')
-
+                
                 if home_team == 'Michigan':
                     home_away = 'Home'
                     opponent = away_team
@@ -133,8 +167,19 @@ class CollegeFootballData:
                     home_away = 'Away'
                     opponent = home_team
                     total_points = away_points
+                
+                date = date.split('T')[0]
+            
+                self.games_list.append({
+                    "gameID": game_id,
+                    "date": date,
+                    "home_away": home_away,
+                    "opponent": opponent,
+                    "total_points": total_points,
+                })
+        
+        return self.games_list
 
-                self.insert_game_results(game_id, date.split('T')[0], home_away, opponent, total_points)
 
     def get_michigan_team_results(self, year):
         """
@@ -146,6 +191,7 @@ class CollegeFootballData:
         data = self.fetch_data(endpoint, params)
         
         if data:
+            
             for game in data:
                 game_id = game.get('id')
                 michigan_data = next((team for team in game['teams'] if team['school'] == 'Michigan'), None)
@@ -156,7 +202,17 @@ class CollegeFootballData:
                     passing_yards = next((stat['stat'] for stat in michigan_data['stats'] if stat['category'] == 'netPassingYards'), None)
                     c_att = completion_attempts
                     pass_attempts = completion_attempts.split('-')[1]
-                    self.insert_game_stats(game_id, rushing_attempts, pass_attempts, c_att, rushing_yards, passing_yards)
+                    
+                self.teams_list.append({
+                    "gameID": game_id,
+                    "rushingAttempts": rushing_attempts,
+                    "completionAttempts": pass_attempts,
+                    "C_ATT": c_att,
+                    "rushingYards": rushing_yards,
+                    "passingYards": passing_yards,
+                })
+                    
+        return self.teams_list
 
     def fetch_and_store_michigan_data(self, start_year, end_year):
         """
@@ -167,9 +223,13 @@ class CollegeFootballData:
         self.create_database()
         for year in range(start_year, end_year - 1, -1):
             print(f"Fetching data for {year}...")
-            self.get_michigan_game_results(year)
-            self.get_michigan_team_results(year)
+            michigan_game_results = self.get_michigan_game_results(year)
+            michigan_team_results = self.get_michigan_team_results(year)
             sleep(1)
+        
+        self.insert_game_results(michigan_game_results)
+        self.insert_game_stats(michigan_team_results)
+        
 
 class Weather:
     def __init__(self, db_path="football_stats.db"):
