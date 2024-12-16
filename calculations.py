@@ -7,32 +7,42 @@ import numpy as np
 
 def get_average_percentage_by_wind_speed():
     """
-    Retrieve and calculate the average percentage of rushing and completion attempts 
-    for each game based on three categories of wind speed, and plot the results as a bar chart with data labels.
+    Calculates and visualizes the average passing and rushing percentages for 
+    football games based on wind speed categories. 
+
+    This function connects to a SQLite database to retrieve game data, processes 
+    the data to calculate average passing and rushing percentages grouped by wind 
+    speed categories (low, moderate, high), writes these averages to a text file, 
+    and generates a bar plot with the results.
+
+    Wind Speed Categories:
+        - Low: Wind speed < 10 mph
+        - Moderate: 10 mph ≤ Wind speed < 20 mph
+        - High: Wind speed ≥ 20 mph
+    
+    Inputs: None
+
+    Outputs:
+        - A text file `data.txt` summarizing average percentages for each wind category.
+        - A bar chart `average_rushing_passing_bar_plot_with_labels.png` illustrating the percentages.
     """
-    conn = sqlite3.connect('football_stats.db')
+    conn = sqlite3.connect('michigan_football.db')
     cursor = conn.cursor()
 
     # SQL query to join GameResults, GameStats, and WeatherData
     query = '''
     SELECT 
         gr.gameID, 
-        gr.date, 
-        gr.home_away, 
-        gr.opponent, 
-        gs.rushingAttempts, 
-        gs.completionAttempts, 
-        wd.max_wind_speed
+        gr.date_timestamp, 
+        gr.home_away_id, 
+        gr.rushingAttempts, 
+        gr.completionAttempts, 
+        gr.max_wind_speed
     FROM 
-        GameResults AS gr
+        Games AS gr
     JOIN 
-        GameStats AS gs 
-    ON 
-        gr.gameID = gs.gameID
-    JOIN 
-        WeatherData AS wd 
-    ON 
-        gr.date = wd.date
+        HomeAway h ON gr.home_away_id = h.id
+
     '''
     
     cursor.execute(query)
@@ -47,7 +57,7 @@ def get_average_percentage_by_wind_speed():
 
     # Process and categorize data
     for row in rows:
-        gameID, date, home_away, opponent, rushingAttempts, completionAttempts, max_wind_speed = row
+        gameID, date, home_away, rushingAttempts, completionAttempts, max_wind_speed = row
 
         if rushingAttempts is not None and completionAttempts not in (None, 0):
             total_attempts = rushingAttempts + completionAttempts
@@ -132,17 +142,22 @@ def get_average_percentage_by_wind_speed():
 
 def plot_average_points_by_temperature(categories):
     """
-    Calculate the average total points for each temperature category and create a line plot.
+    Generates a line plot showing the average total points scored in games categorized by temperature.
 
     Parameters:
-        categories (dict): A dictionary where keys are temperature categories ("Cold", "Moderate", "Warm")
-                          and values are lists of tuples containing game data.
+        categories (dict): A dictionary where keys are temperature categories 
+                           ("Cold", "Moderate", "Warm") and values are lists of tuples 
+                           containing game data (date, game ID, home/away ID, total points, temperature).
+
+    This function calculates the average total points for each temperature category, 
+    and creates a line plot with markers for visualization. The plot is saved as an 
+    image file (`average_points_by_temperature_plot.png`).
     """
     # Calculate average total points for each category
     averages = {}
     for category, games in categories.items():
         if games:  # Ensure there are games in the category
-            total_points = sum(game[4] for game in games)  # Total points are in the 5th element of each tuple
+            total_points = sum(game[3] for game in games)  # Total points are in the 4th element of each tuple
             averages[category] = total_points / len(games)
         else:
             averages[category] = 0  # Handle empty categories
@@ -169,28 +184,37 @@ def plot_average_points_by_temperature(categories):
 
 def get_total_points_by_temperature():
     """
-    Retrieve and calculate total points for each game based on temperature ranges,
-    along with game details, and write the results to a file.
+    Retrieves game data from a SQLite database, categorizes games based on temperature ranges, 
+    calculates total points for each category, and generates a line plot of the average points 
+    for each category. The detailed game data is also written to a file (`data.txt`).
+    
+    Inputs: None
+
+    Outputs:
+        - A text file (`data.txt`) with game data categorized by temperature.
+        - A line plot (`average_points_by_temperature_plot.png`) showing average points by temperature.
+
+    Temperature Categories:
+        - "Cold": Temperature < 32°F
+        - "Moderate": 32°F ≤ Temperature ≤ 50°F
+        - "Warm": Temperature > 50°F
     """
     # Connect to the SQLite database
-    conn = sqlite3.connect('football_stats.db')
+    conn = sqlite3.connect('michigan_football.db')
     cursor = conn.cursor()
 
     # SQL query to fetch data from GameResults and WeatherData
     query = '''
     SELECT 
-        gr.date, 
+        gr.date_timestamp, 
         gr.gameID, 
-        gr.home_away, 
-        gr.opponent, 
+        gr.home_away_id, 
         gr.total_points, 
-        wd.mean_temperature
+        gr.mean_temperature
     FROM 
-        GameResults AS gr
+        Games AS gr
     JOIN 
-        WeatherData AS wd 
-    ON 
-        gr.date = wd.date
+        HomeAway h ON gr.home_away_id = h.id
     '''
     
     cursor.execute(query)
@@ -205,29 +229,29 @@ def get_total_points_by_temperature():
     
     # Categorize games based on temperature
     for row in rows:
-        date, gameID, home_away, opponent, total_points, temperature = row
+        date, gameID, home_away, total_points, temperature = row
         
         if temperature is not None:
             if temperature < 32:
-                categories["Cold"].append((date, gameID, home_away, opponent, total_points, temperature))
+                categories["Cold"].append((date, gameID, home_away, total_points, temperature))
             elif 32 <= temperature <= 50:
-                categories["Moderate"].append((date, gameID, home_away, opponent, total_points, temperature))
+                categories["Moderate"].append((date, gameID, home_away, total_points, temperature))
             else:
-                categories["Warm"].append((date, gameID, home_away, opponent, total_points, temperature))
+                categories["Warm"].append((date, gameID, home_away, total_points, temperature))
     
     plot_average_points_by_temperature(categories)
     
     # Write results to a file
     with open('data.txt', 'a') as file:
-        file.write("-------------Total Points Based on Temperature-------------\n")
+        file.write("\n-------------Total Points Based on Temperature-------------\n")
         
         for category, games in categories.items():
             file.write(f"\n--- {category} Games ---\n")
-            file.write("Date\tGame ID\tHome/Away\tOpponent\tTotal Points\tTemperature\n")
+            file.write("Date\tGame ID\tHome/Away\tTotal Points\tTemperature\n")
             
             for game in games:
-                date, gameID, home_away, opponent, total_points, temperature = game
-                file.write(f"{date}\t{gameID}\t{home_away}\t{opponent}\t{total_points}\t{temperature}°F\n")
+                date, gameID, home_away, total_points, temperature = game
+                file.write(f"{date}\t{gameID}\t{home_away}\t{total_points}\t{temperature}°F\n")
     
     # Close the database connection
     conn.close()
@@ -235,17 +259,25 @@ def get_total_points_by_temperature():
 
 def plot_average_completion_by_wind_speed(categories):
     """
-    Calculate the average completion percentage for each wind speed category and create a bar graph.
+    Generates a bar graph showing the average completion percentage categorized by wind speed.
 
     Parameters:
-        categories (dict): A dictionary where keys are wind speed categories ("Low Wind", "Moderate Wind", "High Wind")
-                          and values are lists of tuples containing game data.
+        categories (dict): A dictionary where:
+                           - Keys are wind speed categories ("Low Wind", "Moderate Wind", "High Wind").
+                           - Values are lists of tuples, each containing:
+                             (date, home/away, completion percentage, max wind speed).
+
+    Functionality:
+    - Calculates the average completion percentage for each wind speed category.
+    - Creates a bar graph with distinct colors for each category.
+    - Displays completion percentages as data labels above the bars.
+    - Saves the graph to a file named `average_completion_by_wind_speed_plot.png`.
     """
     # Calculate average completion percentage for each category
     averages = {}
     for category, games in categories.items():
         if games:  # Ensure there are games in the category
-            total_completion_percentage = sum(game[3] for game in games)  # Completion percentage is in the 4th element
+            total_completion_percentage = sum(game[2] for game in games)  # Completion percentage is in the 3th element
             averages[category] = total_completion_percentage / len(games)
         else:
             averages[category] = 0  # Handle empty categories
@@ -276,31 +308,37 @@ def plot_average_completion_by_wind_speed(categories):
 
 def get_completion_by_wind_speed():
     """
-    Retrieve and calculate the completion percentage for each game based on C_ATT by max_wind_speed range category,
-    along with game details, and write the results to a file.
+    Retrieves game data from a SQLite database, calculates the completion percentage for each game, 
+    categorizes games based on wind speed ranges, and writes detailed results to a file. 
+    It also generates a bar graph showing the average completion percentage by wind speed.
+    
+    Inputs: None
+
+    Outputs:
+        - A text file (`data.txt`) containing game data categorized by wind speed.
+        - A bar graph (`average_completion_by_wind_speed_plot.png`) showing average completion percentages.
+
+    Wind Speed Categories:
+        - "Low Wind": Wind speed < 10 mph.
+        - "Moderate Wind": 10 mph ≤ Wind speed ≤ 20 mph.
+        - "High Wind": Wind speed > 20 mph.
     """
     # Connect to the SQLite database
-    conn = sqlite3.connect('football_stats.db')
+    conn = sqlite3.connect('michigan_football.db')
     cursor = conn.cursor()
 
     # SQL query to fetch data from GameStats, GameResults, and WeatherData
     query = '''
     SELECT 
-        gr.date, 
-        gs.C_ATT, 
-        gr.home_away, 
-        gr.opponent, 
-        wd.max_wind_speed
+        gr.date_timestamp, 
+        gr.completed,
+        gr.attempted, 
+        gr.home_away_id, 
+        gr.max_wind_speed
     FROM 
-        GameStats AS gs
+        Games AS gr
     JOIN 
-        GameResults AS gr 
-    ON 
-        gs.gameID = gr.gameID
-    JOIN 
-        WeatherData AS wd 
-    ON
-        gr.date = wd.date
+        HomeAway h ON gr.home_away_id = h.id
     '''
 
     cursor.execute(query)
@@ -315,12 +353,11 @@ def get_completion_by_wind_speed():
 
     # Process the data
     for row in rows:
-        date, c_att, home_away, opponent, max_wind_speed = row
+        date, completed, attempted, home_away, max_wind_speed = row
 
         # Handle C_ATT and calculate completion percentage
-        if c_att is not None:
+        if completed is not None and attempted is not None:
             try:
-                completed, attempted = map(int, c_att.split('-'))
                 completion_percentage = (completed / attempted) * 100 if attempted > 0 else 0
             except ValueError:
                 completion_percentage = 0
@@ -330,35 +367,42 @@ def get_completion_by_wind_speed():
         # Categorize games based on wind speed
         if max_wind_speed is not None:
             if max_wind_speed < 10:
-                categories["Low Wind"].append((date, home_away, opponent, completion_percentage, max_wind_speed))
+                categories["Low Wind"].append((date, home_away, completion_percentage, max_wind_speed))
             elif 10 <= max_wind_speed <= 20:
-                categories["Moderate Wind"].append((date, home_away, opponent, completion_percentage, max_wind_speed))
+                categories["Moderate Wind"].append((date, home_away, completion_percentage, max_wind_speed))
             else:
-                categories["High Wind"].append((date, home_away, opponent, completion_percentage, max_wind_speed))
+                categories["High Wind"].append((date, home_away, completion_percentage, max_wind_speed))
 
     plot_average_completion_by_wind_speed(categories)
 
     # Write results to a file
     with open('data.txt', 'a') as file:
-        file.write("-------------Completion Percentage Based on Wind Speed-------------\n")
+        file.write("\n-------------Completion Percentage Based on Wind Speed-------------\n")
 
         for category, games in categories.items():
             file.write(f"\n--- {category} ---\n")
-            file.write("Date\tHome/Away\tOpponent\tCompletion Percentage\tMax Wind Speed\n")
+            file.write("Date\tHome/Away\tCompletion Percentage\tMax Wind Speed\n")
 
             for game in games:
-                date, home_away, opponent, completion_percentage, max_wind_speed = game
-                file.write(f"{date}\t{home_away}\t{opponent}\t{completion_percentage:.2f}%\t{max_wind_speed} mph\n")
+                date, home_away, completion_percentage, max_wind_speed = game
+                file.write(f"{date}\t{home_away}\t{completion_percentage:.2f}%\t{max_wind_speed} mph\n")
 
     # Close the database connection
     conn.close()
 
 def visual_completion_avg_total_points(averages):
     """
-    Create a line plot to visualize the average total points for each completion range.
-    
+    Creates a line plot to visualize the relationship between completion percentage ranges 
+    and the average total points scored in games.
+
     Parameters:
-    averages (dict): A dictionary with completion ranges as keys and average total points as values.
+        averages (dict): A dictionary where:
+                         - Keys are completion percentage ranges as strings (e.g., "0-50").
+                         - Values are the average total points scored for games in that range.
+
+    Functionality/Outputs:
+    - Generates a line plot with the completion percentage ranges on the x-axis and average total points on the y-axis.
+    - Saves the plot as a PNG file named `completion_avg_total_points_plot.png`.
     """
     # Extract x and y values from the averages dictionary
     x_values = list(averages.keys())  # Completion ranges
@@ -382,11 +426,25 @@ def visual_completion_avg_total_points(averages):
     
 def get_avg_score_per_percentage():
     """
-    Calculate and write the average total points for games grouped by completion percentage ranges.
+    Calculates the average total points for games grouped by completion percentage ranges,
+    visualizes the data in a line plot, and writes the results to a file.
+    
+    Inputs: None
+
+    Outputs:
+        - A line plot (`completion_avg_total_points_plot.png`) showing average total points 
+        for each completion percentage range.
+        - Appends the results to a text file (`data.txt`).
+
+    Completion Percentage Ranges:
+        - "0-50": Completion percentage ≤ 50%.
+        - "51-60": 51% ≤ Completion percentage ≤ 60%.
+        - "61-70": 61% ≤ Completion percentage ≤ 70%.
+        - "71-100": 71% ≤ Completion percentage ≤ 100%.
     """
     import sqlite3
 
-    conn = sqlite3.connect('football_stats.db')
+    conn = sqlite3.connect('michigan_football.db')
     cursor = conn.cursor()
 
     # SQL query to fetch gameID, totalPoints, and C_ATT
@@ -394,13 +452,12 @@ def get_avg_score_per_percentage():
     SELECT 
         gr.gameID, 
         gr.total_points, 
-        gs.C_ATT
+        gr.completed,
+        gr.attempted
     FROM 
-        GameResults AS gr
+        Games AS gr
     JOIN 
-        GameStats AS gs 
-    ON 
-        gr.gameID = gs.gameID
+        HomeAway h ON gr.home_away_id = h.id
     '''
 
     cursor.execute(query)
@@ -416,11 +473,10 @@ def get_avg_score_per_percentage():
 
     # Process the data
     for row in rows:
-        game_id, total_points, c_att = row
+        game_id, total_points, completed, attempted = row
 
-        if c_att is not None:
+        if completed is not None and attempted is not None:
             try:
-                completed, attempted = map(int, c_att.split('-'))
                 if attempted != 0:
                     completion_percentage = (completed / attempted) * 100
                 else:
@@ -450,7 +506,7 @@ def get_avg_score_per_percentage():
 
     # Write the results to a file
     with open('data.txt', 'a') as file:
-        file.write("-------------Average Score Per Completion Percentage Range-------------\n")
+        file.write("\n-------------Average Score Per Completion Percentage Range-------------\n")
         file.write("Range\tAverage Total Points\n")
 
         for range_key, avg_points in averages.items():
@@ -460,6 +516,18 @@ def get_avg_score_per_percentage():
 
 
 def main():   
+    """
+    Serves as the main for executing the program.
+    
+    Inputs: None
+
+    Functionality:
+    - Calls the following functions:
+        1. `get_average_percentage_by_wind_speed`: Analyzes completion percentages based on wind speed.
+        2. `get_total_points_by_temperature`: Analyzes total points scored based on temperature ranges.
+        3. `get_completion_by_wind_speed`: Analyzes completion percentages based on wind speed.
+        4. `get_avg_score_per_percentage`: Analyzes average total points based on completion percentage ranges.
+    """
     get_average_percentage_by_wind_speed()
     get_total_points_by_temperature()
     get_completion_by_wind_speed()

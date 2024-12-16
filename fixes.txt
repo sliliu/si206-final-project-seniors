@@ -1,0 +1,12 @@
+Feedback Corrections:
+Create a new table HomeAway to fix duplicate strings
+home = 1
+away = 2
+
+Previously had data split into multiple tables with valid reason.
+Put it all into 1 table
+
+
+Make sure to change calculation function after changing database (select) - Done
+
+Make sure to not have any duplicate string data - Done
